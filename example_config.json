@@ -1,0 +1,8 @@
+{
+    "robot_id": "dusty_01",
+    "robot_type": "cleaning",
+    "name": "Dusty",
+    "battery_level": 80,
+    "is_moving": false,
+    "sensor_reading": 25
+}

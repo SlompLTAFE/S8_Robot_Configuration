@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot>
+    <robot_id>guard_01</robot_id>
+    <robot_type>security</robot_type>
+    <name>Guard</name>
+    <battery_level>90</battery_level>
+    <is_moving>false</is_moving>
+    <sensor_reading>30</sensor_reading>
+</robot>
