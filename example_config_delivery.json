@@ -1,0 +1,8 @@
+{
+    "robot_id": "courier_fallout",
+    "robot_type": "delivery",
+    "name": "Courier",
+    "battery_level": 75,
+    "is_moving": true,
+    "sensor_reading": 15
+}
