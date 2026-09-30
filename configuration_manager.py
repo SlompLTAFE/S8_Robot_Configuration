@@ -74,16 +74,30 @@ class ConfigurationManager:
                 tree = ET.parse(self.config_file)
                 root = tree.getroot()
 
-                self.config = {
-                    child.tag: child.text
-                    for child in root
-                }
+                self.config = {}
 
-            else:
-                raise ConfigParseError(
-                    self.config_file,
-                    f"Unsupported file format: {file_extension}"
-                )
+                for child in root:
+                    value = child.text
+
+                    if value is None:
+                        value = ""
+
+                    elif value.lower() == "true":
+                        value = True
+
+                    elif value.lower() == "false":
+                        value = False
+
+                    else:
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            try:
+                                value = float(value) # Just in case for if int values are not suitable for newer changes to Robots.
+                            except ValueError:
+                                pass
+
+                    self.config[child.tag] = value
 
         except (json.JSONDecodeError, ET.ParseError) as error:
             raise ConfigParseError(
@@ -153,6 +167,35 @@ class ConfigurationManager:
 
         return True
     
+    def create_robot(self):
+        """
+        Create a robot object based on the loaded configuration.
+
+        Returns:
+            A robot object matching the configured robot type.
+
+        Raises:
+            ConfigValidationError: If the configuration is invalid.
+            ConfigurationError: If the robot type is unsupported.
+        """
+        self.validate()
+
+        robot_type = self.config["robot_type"]
+
+        robot_classes = {"cleaning": CleaningRobot, "security": SecurityRobot, "delivery": DeliveryRobot}
+
+        if robot_type not in robot_classes:
+            raise ConfigurationError(f"Unsupported robot type: {robot_type}")
+
+        robot_class = robot_classes[robot_type]
+
+        return robot_class(
+            self.config["name"],
+            self.config["battery_level"],
+            self.config["is_moving"],
+            self.config["sensor_reading"]
+        )
+    
     def save(self):
         """
         Save the current configuration back to the configuration file.
@@ -194,26 +237,15 @@ class ConfigurationManager:
             ) from error
             
 
+
+print("JSON robot:")
 json_config = ConfigurationManager("example_config.json")
+json_robot = json_config.create_robot()
+print(type(json_robot).__name__)
+json_robot.perform_task()
+
+print("\nXML robot:")
 xml_config = ConfigurationManager("example_config.xml")
-
-json_config.config["robot"] = {
-    "name": "Duster",
-    "battery_level": 80
-}
-print("Original name:")
-print(json_config.get("name"))
-
-#Changing config heree
-json_config.config["name"] = "Duster"
-json_config.config["battery_level"] = 95
-
-print("\nValidation:")
-print(json_config.validate())
-json_config.save()
-print("\nConfig saved.")
-
-saved_config = ConfigurationManager("example_config.json")
-print("\nReloaded configuration:")
-print(saved_config.get("name"))
-print(saved_config.get("battery_level"))
+xml_robot = xml_config.create_robot()
+print(type(xml_robot).__name__)
+xml_robot.perform_task()
