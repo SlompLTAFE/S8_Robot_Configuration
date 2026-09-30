@@ -37,6 +37,8 @@ import json
 import os
 import xml.etree.ElementTree as ET
 
+from robot_base import CleaningRobot, SecurityRobot, DeliveryRobot
+
 
 class ConfigurationManager:
     """
@@ -111,6 +113,85 @@ class ConfigurationManager:
             current = current[part]
 
         return current
+    
+    def validate(self):
+        """
+        Validate the loaded robot configuration.
+
+        Raises:
+            ConfigValidationError: If the configuration contains invalid data.
+        """
+        errors = []
+
+        required_fields = [
+            "robot_id",
+            "robot_type",
+            "name",
+            "battery_level",
+            "is_moving",
+            "sensor_reading"
+        ]
+
+        for field in required_fields:
+            if field not in self.config:
+                errors.append(f"Missing required field: {field}")
+
+        if "battery_level" in self.config:
+            battery_level = self.config["battery_level"]
+
+            if not isinstance(battery_level, (int, float)):
+                errors.append("Battery must be higher!.")
+            elif not 0 <= battery_level <= 100:
+                errors.append("Battery level must be between 0 and 100!")
+
+        if "is_moving" in self.config:
+            if not isinstance(self.config["is_moving"], bool):
+                errors.append("is_moving must be a Boolean True or False.")
+
+        if errors:
+            raise ConfigValidationError(errors)
+
+        return True
+    
+    def save(self):
+        """
+        Save the current configuration back to the configuration file.
+
+        The file format is detected from the file extension.
+        """
+
+        file_extension = os.path.splitext(self.config_file)[1].lower()
+
+        try:
+            if file_extension == ".json":
+                with open(self.config_file, "w") as file:
+                    json.dump(self.config, file, indent=4)
+
+            elif file_extension == ".xml":
+                root = ET.Element("robot")
+
+                for key, value in self.config.items():
+                    child = ET.SubElement(root, key)
+                    child.text = str(value)
+
+                tree = ET.ElementTree(root)
+                ET.indent(tree, space="    ")
+                tree.write(
+                    self.config_file,
+                    encoding="utf-8",
+                    xml_declaration=True
+                )
+
+            else:
+                raise ConfigParseError(
+                    self.config_file,
+                    f"Unsupported file format: {file_extension}"
+                )
+
+        except OSError as error:
+            raise ConfigurationError(
+                f"Error saving configuration file {self.config_file}: {error}"
+            ) from error
             
 
 json_config = ConfigurationManager("example_config.json")
@@ -120,14 +201,19 @@ json_config.config["robot"] = {
     "name": "Duster",
     "battery_level": 80
 }
+print("Original name:")
+print(json_config.get("name"))
 
-print("JSON:")
-print(json_config.get("robot.name"))
-print(json_config.get("robot.battery_level"))
-print(json_config.get("robot.robot_type"))
-print(json_config.get("does_not_exist", "Default Value"))
+#Changing config heree
+json_config.config["name"] = "Duster"
+json_config.config["battery_level"] = 95
 
-print("\nXML:")
-print(xml_config.get("name"))
-print(xml_config.get("battery_level"))
-print(xml_config.get("robot_type"))
+print("\nValidation:")
+print(json_config.validate())
+json_config.save()
+print("\nConfig saved.")
+
+saved_config = ConfigurationManager("example_config.json")
+print("\nReloaded configuration:")
+print(saved_config.get("name"))
+print(saved_config.get("battery_level"))
