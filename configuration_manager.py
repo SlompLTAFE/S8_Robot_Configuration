@@ -154,7 +154,7 @@ class ConfigurationManager:
             battery_level = self.config["battery_level"]
 
             if not isinstance(battery_level, (int, float)):
-                errors.append("Battery must be higher!.")
+                errors.append("Battery level must be a number!")
             elif not 0 <= battery_level <= 100:
                 errors.append("Battery level must be between 0 and 100!")
 
